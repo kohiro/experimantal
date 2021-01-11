@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+	<head>
+<!-- 	<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/md5.js"></script> -->
+	<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+
+<!-- 	<script src="md5.js"></script> -->
+<!-- 	<script src="blueimp.js"></script> -->
+	<script src="emn178.js"></script>
+<!-- 	<script src="spark.js"></script> -->
+	<script>
+	$(function(){
+		$(document.body).append('<input type="file">');
+		$('input:file').change(function(){
+			var file = $('input:file')[0].files[0];
+			console.log(file);
+			var reader = new FileReader();
+			reader.onload = function(event){
+				var bytes = event.target.result;
+				var hash = md5.create().update(bytes).hex();
+				console.log("hash:" + hash);
+			};
+			reader.readAsArrayBuffer(file);
+		});
+	});
+	</script>
+	</head>
+	<body></body>
+</html>
