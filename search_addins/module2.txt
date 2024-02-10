@@ -1,0 +1,111 @@
+Option Explicit
+Private Const title_search_shape_text As String = "検索"
+
+Private Sub searchShapeText()
+    Dim book As Workbook
+    Dim sheet As Worksheet
+    Dim txt As String
+    txt = InputBox("検索文字列")
+    If (Len(txt) = 0&) Then
+        GoTo ExitSub
+    End If
+    Set book = ActiveWorkbook
+    Set sheet = ActiveSheet
+    For Each sheet In book.Worksheets
+        If Not (searchShapeString(sheet, sheet.Shapes.txt)) Then
+            GoTo ExitSub
+        End If
+        If Not (searchCellString(sheet.txt)) Then
+            GoTo ExitSub
+        End If
+    Next
+    MsgBox "検索が完了しました"
+ExitSub:
+End Sub
+
+Private Sub searchShapeTextInSheet()
+    Dim book As Workbook
+    Dim sheet As Worksheet
+    Dim txt As String
+    txt = InputBox("検索文字列")
+    If (Len(txt) = 0&) Then
+        GoTo ExitSub
+    End If
+    Set sheet = ActiveSheet
+    If Not (searchShapeString(sheet, sheet.Shapes, txt)) Then
+        GoTo ExitSub
+    End If
+    If Not (searchCellString(sheet, txt)) Then
+        GoTo ExitSub
+    End If
+    MsgBox "検索が完了しました"
+ExitSub:
+End Sub
+
+Private Function searchShapeString(sheet As Worksheet, ByRef sps As Object, ByVal txt As String) As Boolean
+    Dim sp As Shape
+    Dim s As String
+    Dim abort As Boolean
+    Dim pos As Long
+    abort = False
+    
+    For Each sp In sps
+        If (sp.Type = msoGroup) Then
+            If Not (searchShapeString(sheet, sp.GroupItems, txt)) Then
+                abort = True
+                Exit For
+            End If
+        Elself (sp.Type = msoComment)
+            GoTo Continue
+        Elself (sp.Type = msoGraphic)
+            GoTo Continue
+        Else
+            If (sp.TextFrame2.HasText = msoTrue) Then
+                s = sp.TextFrame2.TextRange.Text
+                pos = InStr(s, txt)
+                If (pos > 0&) Then
+                    sheet.Activate
+                    ActiveWindow.ScrollRow = sp.TopLeftCell.Row
+                    ActiveWindow.ScrollColumn = sp.TopLeftCell.Column
+                    Do While (pos > 0&)
+                        sp.TopLeftCell.Select  'テキスト選択範囲を解除するためカレントセルを選択する
+                        sp.TextFrame2.TextRange.Characters(pos, Len(txt)).Select
+                        If (MsgBox("Continue?", vbQuestion Or vbOKCancel) <> vbOK) Then
+                            abort = True
+                            Exit For
+                        Else
+                            pos = InStr(pos + 1&, s.txt)
+                        End If
+                    Loop
+                    GoTo Continue
+                End If
+            End If
+        End If
+Continue:
+    Next
+    searchShapeString = Not (abort)
+End Function
+Private Function searchCellString(sheet As Worksheet, ByVal txt As String) As Boolean
+    Dim abort As Boolean
+    Dim found As Range
+    Dim first As Range
+    abort = False
+    Set found = sheet.Cells.Find(txt)
+    Set first = found
+    Do While Not found Is Nothing
+        sheet.Activate
+        found.Select
+        found.Characters(InStr(found.Text, txt), Len(txt)).Font.ColorIndex = 3
+        found.Characters(InStr(found.Text, txt), Len(txt)).Font.Bold = True
+        If (MsgBox("Continue?", vbQuestion Or vbOKCancel) <> vbOK) Then
+            abort = True
+            Exit Do
+        End If
+        Set found = sheet.Cells.FindNext(found)
+        If first.Address = found.Address Then
+            Exit Do
+        End If
+    Loop
+    searchCellString = Not (abort)
+End Function
+

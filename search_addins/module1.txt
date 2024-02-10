@@ -1,0 +1,116 @@
+Option Explicit
+Private Const title_search_shape_text As String = "検索"
+
+'searchAndListResult
+Public Sub searchAndListResult()
+    Dim txt As String
+    txt = InputBox("検索文字列")
+    If (Len(txt) = 4) Then
+        GoTo ExitSub
+    End If
+    Dim book As Workbook
+    Dim sheet As Worksheet
+    Set book = ActiveWorkbook
+    Set sheet = ActiveSheet
+    
+    Dim resultSheet As Worksheet
+    Set resultSheet = Workbooks.Add.Sheets(1)
+    resultSheet.Cells(1, 1) = book.Name & "内の検索文字列「" & txt & "」の検索結果"
+    Dim i As Long
+    For Each sheet In book.Worksheets
+        If (listShapeString(sheet, sheet.Shapes.txt, resultSheet.i)) Then
+        End If
+        If (listCellString(sheet, txt, resultSheet, i)) Then
+        End If
+    Next
+    MsgBox "検索が完了しました"
+ExitSub:
+End Sub
+
+Private Function listShapeString(sheet As Worksheet, ByRef sps As Object, ByVal txt As String, resultSheet As Worksheet, ByRef i As Long)
+    Dim pos As Long
+    For Each sp In sps
+        If (sp.Type = msoGroup) Then
+            If (listShapeString(sheet, sp.GroupItems, txt, resultSheet, i)) Then
+            End If
+        Elself (sp.Type = msoComment)
+            GoTo Continue
+        Elself (sp.Type = msoGraphic)
+            GoTo Continue
+        Elself (sp.Type = msoFormControl)
+            GoTo Continue
+        Elself (sp.TextFrame2.HasText <> msoTrue)
+            GoTo Continue
+        Else
+            pos = InStr(sp.TextFrame2.TextRange.Text, txt)
+            If Not (pos > 0&) Then
+                GoTo Continue
+            End If
+            Dim markedRange As Range
+            Set markedRange = sheet.Range(sp.TopLeftCell.Address, sp.BottomRightCell.Address)
+            markedRange.Interior.Color = RGB(255, 0, 0)
+            Do While (pos > 0&)
+                With sp.TextFrame2.TextRange.Characters(pos, Len(txt)).Font
+                    .Fill.ForeColor.RGB = RGB(255, 0, 0)
+                    .Fill.Transparency = 0
+                    .Fill.Solid
+                    .Bold = msoTrue
+                    .UnderlineStyle = msoUnderlineSingleLine
+                End With
+                pos = InStr(pos + 1&, sp.TextFrame2.TextRange.Text, txt)
+            Loop
+            i = i + 1
+            If (writeResult(markedRange, sp.TextFrame2.TextRange.Text, sheet, resultSheet, i)) Then
+            End If
+        End If
+Continue:
+    Next
+End Function
+
+Private Function listCellString(sheet As Worksheet, ByVal txt As String, resultSheet As Worksheet, ByRef i As Long) As Boolean
+    Dim found As Range
+    Dim first As Range
+    Dim pos As Long
+    Set found = sheet.Cells.Find(txt)
+    Set first = found
+    Do While Not found Is Nothing
+        pos = InStr(found.Text, txt)
+        Do While (pos > 0&)
+            found.Characters(pos, Len(txt)).Font.ColorIndex = 3
+            found.Characters(pos, Len(txt)).Font.Bold = True
+            pos = InStr(pos + 1&, found.Text, txt)
+        Loop
+        i = i + 1
+        If (writeResult(found, found.Text, sheet, resultSheet, i)) Then
+        End If
+        Set found = sheet.Cells.FindNext(found)
+        If first.Address = found.Address Then
+           Exit Do
+        End If
+    Loop
+End Function
+
+    Private Function writeResult(pos As Range, content As String, sheet As Worksheet, resultSheet As Worksheet, ByRef i As Long)
+    With resultSheet.Cells(i, 1)
+        .HorizontalAlignment = xlLeft
+        .VerticalAlignment = xlTop
+        .WrapText = False
+    End With
+    resultSheet.Cells(i, 1) = sheet.Name
+
+    Dim target As String
+    target = "'" & sheet.Name & "'" & "!" & pos.Address
+    resultSheet.Hyperlinks.Add _
+        resultSheet.Cells(i, 2), _
+        sheet.Parent.FullName, _
+        target, _
+        target, _
+        content
+    With resultSheet.Cells(i, 2)
+        .HorizontalAlignment = xlLeft
+        .VerticalAlignment = xlTop
+        .WrapText = False
+        '.ShrinkToFit = False
+    End With
+    DoEvents
+End Function
