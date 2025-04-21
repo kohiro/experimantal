@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         point="org.eclipse.ui.views">
+      <category
+            name="Sample Category"
+            id="com.example.callhierarchyplugin.category">
+      </category>
+      <view
+            name="Recursive Call Hierarchy"
+            icon="icons/sample.png" category="com.example.callhierarchyplugin.category"
+            class="com.example.callhierarchyplugin.views.CallHierarchyView"
+            id="com.example.callhierarchyplugin.views.CallHierarchyView">
+      </view>
+   </extension>
+
+   <extension
+         point="org.eclipse.ui.commands">
+      <category
+            description="Commands for the Call Hierarchy Plugin"
+            id="com.example.callhierarchyplugin.category.commands"
+            name="Call Hierarchy Commands">
+      </category>
+      <command
+            categoryId="com.example.callhierarchyplugin.category.commands"
+            description="Finds the root callers of the selected Java method"
+            id="com.example.callhierarchyplugin.command.findCallers"
+            name="Find Root Callers">
+      </command>
+   </extension>
+
+   <extension
+         point="org.eclipse.ui.handlers">
+      <handler
+            class="com.example.callhierarchyplugin.handlers.FindCallersHandler"
+            commandId="com.example.callhierarchyplugin.command.findCallers">
+         </handler>
+   </extension>
+
+   <extension
+         point="org.eclipse.ui.menus">
+      <menuContribution
+            locationURI="popup:org.eclipse.jdt.ui.CompilationUnitEditor.EditorContext?after=additions">
+             <command
+               commandId="com.example.callhierarchyplugin.command.findCallers"
+               icon="platform:/plugin/org.eclipse.search/icons/full/etool16/search.png"
+               label="Find Root Callers"
+               style="push"
+               tooltip="選択されたメソッドの根本的な呼び出し元を検索します">
+            </command>
+      </menuContribution>
+
+      </extension>
+
+   </plugin>
