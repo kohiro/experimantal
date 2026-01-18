@@ -8,25 +8,42 @@ fi
 
 FILE1="$1"
 FILE2="$2"
-KEY_COL=3
-SAMPLE_LIMIT=10
+KEY_COL=3        # キーの列番号（要件に合わせて変更可能）
+SAMPLE_LIMIT=10  # 1項目あたりのサンプル出力数
 
 # awkによる比較処理
 awk -F, -v f2="$FILE2" -v key_col="$KEY_COL" -v limit="$SAMPLE_LIMIT" '
-BEGIN {
-    # 差分カウンタとサンプル配列の初期化は自動で行われるため不要
+# ---------------------------------------------------------
+# 1行目（ヘッダー）の処理
+# ---------------------------------------------------------
+NR == 1 {
+    # FILE1のヘッダーを配列に保存
+    for (i = 1; i <= NF; i++) {
+        header[i] = $i
+    }
+    
+    # FILE2のヘッダーも読み飛ばしてデータ開始位置を合わせる
+    if ((getline dummy < f2) <= 0) {
+        print "Error: File 2 is empty or cannot be read." > "/dev/stderr"
+        exit 1
+    }
+    
+    # 次の行（データ行）へ
+    next
 }
 
-# FILE1の各行に対する処理
+# ---------------------------------------------------------
+# 2行目以降（データ行）の処理
+# ---------------------------------------------------------
 {
     k1 = $key_col
     
-    # FILE2から行を読み込み、キーを合わせるループ (Merge Join的な処理)
+    # FILE2から行を読み込み、キーを合わせるループ
     while (1) {
         # FILE2から1行読む
         status = (getline line2 < f2)
         if (status <= 0) {
-            # FILE2が終了した場合、FILE1の残りは比較対象なしとして終了
+            # FILE2終了
             exit
         }
         
@@ -35,16 +52,14 @@ BEGIN {
         k2 = arr2[key_col]
         
         if (k2 < k1) {
-            # FILE2のキーが小さい -> FILE2を進める (FILE1にあるがFILE2にないキーは無視する場合)
-            # ※必要であればここで「FILE2にキー欠損」のログを出せる
+            # FILE2のキーが小さい -> FILE2を進める
             continue
         } else if (k2 > k1) {
-            # FILE2のキーが追い越した -> FILE1を進める (FILE2にあるがFILE1にないキー)
-            # 次のFILE1の行を読むためにこのブロックを抜ける
+            # FILE2が進みすぎた -> FILE1を進める
             next_file1 = 1
             break
         } else {
-            # キー一致 (k1 == k2) -> 比較処理へ
+            # キー一致 -> 比較へ
             next_file1 = 0
             break
         }
@@ -53,7 +68,6 @@ BEGIN {
     if (next_file1) next
 
     # カラムごとの比較
-    # NFは現在の行(FILE1)のカラム数
     max_col = (NF > length(arr2)) ? NF : length(arr2)
     
     for (i = 1; i <= max_col; i++) {
@@ -61,28 +75,31 @@ BEGIN {
         val2 = arr2[i]
         
         if (val1 != val2) {
-            # 差分がある場合
             diff_counts[i]++
             
-            # サンプル数が上限未満なら保存
             if (diff_counts[i] <= limit) {
-                # フォーマット: Key: Value1 -> Value2
+                # サンプル保存
                 samples[i, diff_counts[i]] = k1 ": " val1 " -> " val2
             }
         }
     }
 }
 
+# ---------------------------------------------------------
+# 結果出力
+# ---------------------------------------------------------
 END {
-    # 結果の出力
-    print "=== Comparison Report ==="
+    print "=== CSV Comparison Report ==="
     has_diff = 0
     
-    # 記録されたカラム順にスキャン（最大カラム数は推測）
+    # 記録されたカラム順にスキャン
     for (i in diff_counts) {
         has_diff = 1
+        col_name = (i in header) ? header[i] : "Unknown"
+        
         print "--------------------------------------------------"
-        printf "Column %d: %d differences found (showing first %d)\n", i, diff_counts[i], (diff_counts[i] < limit ? diff_counts[i] : limit)
+        # 列番号に加えて、ヘッダー名を表示
+        printf "Column %d [%s]: %d diffs (showing first %d)\n", i, col_name, diff_counts[i], (diff_counts[i] < limit ? diff_counts[i] : limit)
         print "--------------------------------------------------"
         
         for (j = 1; j <= limit; j++) {
