@@ -1,0 +1,19 @@
+-- 既存があれば削除
+DROP TABLE export_csv_work;
+
+-- 外部テーブル作成（＝CSV書き出し実行）
+CREATE TABLE export_csv_work
+ORGANIZATION EXTERNAL (
+  TYPE ORACLE_LOADER
+  DEFAULT DIRECTORY CSV_DIR      -- 手順1のディレクトリオブジェクト名
+  ACCESS PARAMETERS (
+    RECORDS DELIMITED BY NEWLINE
+    FIELDS TERMINATED BY ','     -- カンマ区切り
+    OPTIONALLY ENCLOSED BY '"'   -- 必要ならダブルクォートで囲む
+    MISSING FIELD VALUES ARE NULL
+  )
+  LOCATION ('output_huge_data.csv') -- 出力ファイル名
+)
+PARALLEL 4  -- 並列度（CPUに余裕があれば指定すると更に高速）
+AS
+SELECT * FROM 巨大なテーブル;
