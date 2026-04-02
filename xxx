@@ -1,0 +1,17 @@
+Add-Type -AssemblyName System.Windows.Forms
+Write-Host "5分ごとにマウスを動かします。停止するには Ctrl+C を押してください。"
+
+while ($true) {
+    # 現在のマウス座標を取得
+    $pos = [System.Windows.Forms.Cursor]::Position
+    
+    # 1ピクセルずらす
+    [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point($pos.X + 1, $pos.Y)
+    Start-Sleep -Milliseconds 50
+    
+    # 元に戻す
+    [System.Windows.Forms.Cursor]::Position = $pos
+    
+    # 5分（300秒）待機
+    Start-Sleep -Seconds 300
+}
