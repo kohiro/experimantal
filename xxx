@@ -1,12 +1,19 @@
+# 必要なライブラリを両方とも明示的に読み込む
 Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing 
+
 Write-Host "5分ごとにマウスを動かします。停止するには Ctrl+C を押してください。"
 
 while ($true) {
     # 現在のマウス座標を取得
     $pos = [System.Windows.Forms.Cursor]::Position
     
+    # 確実にするため、明示的に数値（int）として変数に格納して計算
+    $newX = [int]$pos.X + 1
+    $newY = [int]$pos.Y
+    
     # 1ピクセルずらす
-    [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point($pos.X + 1, $pos.Y)
+    [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point($newX, $newY)
     Start-Sleep -Milliseconds 50
     
     # 元に戻す
