@@ -1,24 +1,25 @@
-# 必要なライブラリを両方とも明示的に読み込む
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing 
+# C#のコードをPowerShell内でコンパイルして読み込む
+# powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Path\To\OpenClipHistory.ps1"
+$code = @"
+using System.Runtime.InteropServices;
+public class WinKey {
+    [DllImport("user32.dll")]
+    public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
 
-Write-Host "5分ごとにマウスを動かします。停止するには Ctrl+C を押してください。"
-
-while ($true) {
-    # 現在のマウス座標を取得
-    $pos = [System.Windows.Forms.Cursor]::Position
-    
-    # 確実にするため、明示的に数値（int）として変数に格納して計算
-    $newX = [int]$pos.X + 1
-    $newY = [int]$pos.Y
-    
-    # 1ピクセルずらす
-    [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point($newX, $newY)
-    Start-Sleep -Milliseconds 50
-    
-    # 元に戻す
-    [System.Windows.Forms.Cursor]::Position = $pos
-    
-    # 5分（300秒）待機
-    Start-Sleep -Seconds 300
+    public static void PressWinV() {
+        // 0x5B = 左Windowsキー, 0x56 = Vキー, 0x0002 = キーアップ
+        keybd_event(0x5B, 0, 0, 0);         // Winキー押下
+        keybd_event(0x56, 0, 0, 0);         // Vキー押下
+        keybd_event(0x56, 0, 0x0002, 0);    // Vキー離す
+        keybd_event(0x5B, 0, 0x0002, 0);    // Winキー離す
+    }
 }
+"@
+
+Add-Type -TypeDefinition $code
+
+# ショートカットキーの入力と被らないようにごくわずかに待機
+Start-Sleep -Milliseconds 200
+
+# 仮想キー入力を実行
+[WinKey]::PressWinV()
